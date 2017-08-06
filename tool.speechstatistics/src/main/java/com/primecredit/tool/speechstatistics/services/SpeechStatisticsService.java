@@ -5,7 +5,7 @@ import java.util.Date;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.primecredit.tool.common.util.ChineseUtil;
+import com.primecredit.tool.common.util.ChineseUtils;
 import com.primecredit.tool.common.wsobject.request.SpeechStatisticsRequest;
 import com.primecredit.tool.speechstatistics.domain.Sentence;
 import com.primecredit.tool.speechstatistics.domain.StatisticsFile;
@@ -57,7 +57,7 @@ public class SpeechStatisticsService {
 
 	private void statisticsLine(Sentence sentence,  String line) {
 
-		String chineseLine = ChineseUtil.removeNonChinese(line);
+		String chineseLine = ChineseUtils.removeNonChinese(line);
 
 		String[] list = chineseLine.split("");
 

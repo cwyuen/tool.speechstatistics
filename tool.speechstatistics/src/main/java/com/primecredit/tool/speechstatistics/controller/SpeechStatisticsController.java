@@ -25,12 +25,16 @@ public class SpeechStatisticsController {
 	@RequestMapping(value = "/statistics", method = RequestMethod.POST)
 	public SpeechStatisticsResponse statistics(@RequestBody SpeechStatisticsRequest request) {
 
+		logger.info("statistics source:" + request.getSourceFileName());
+		
+		
 		boolean success = speechStatisticsService.statistics(request);
 
 		SpeechStatisticsResponse response = new SpeechStatisticsResponse();
 		response.setClientMachineId(request.getClientMachineId());
 		response.setMillisecond(new Date().getTime());
-		response.setReturnCode(String.valueOf(success));
+		response.setSuccess(success);
+		
 		return response;
 
 	}
