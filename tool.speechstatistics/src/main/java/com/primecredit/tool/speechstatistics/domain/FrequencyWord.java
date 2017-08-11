@@ -7,15 +7,15 @@ import org.neo4j.ogm.annotation.GraphId;
 import org.neo4j.ogm.annotation.NodeEntity;
 import org.neo4j.ogm.annotation.Relationship;
 
-@NodeEntity
-public class Vocabulary {
+@NodeEntity(label = "fq_word")
+public class FrequencyWord {
 	@GraphId
 	private Long id;
 	private String name;
 	private int count = 0;
 
-	@Relationship(type = "contain", direction = Relationship.DIRECTION)
-	private List<VocabularyRelationship> contains = new ArrayList<VocabularyRelationship>();
+	@Relationship(type = "source", direction = Relationship.DIRECTION)
+	private List<FrequencyWordRelationship> sources = new ArrayList<FrequencyWordRelationship>();
 
 	public Long getId() {
 		return id;
@@ -41,15 +41,16 @@ public class Vocabulary {
 		this.count = count;
 	}
 
-	public List<VocabularyRelationship> getContains() {
-		return contains;
+	
+	public void addFrequencyWordRelationship(FrequencyWordRelationship vocabularyRelationship) {
+		this.getSources().add(vocabularyRelationship);
 	}
 
-	public void setContains(List<VocabularyRelationship> contains) {
-		this.contains = contains;
+	public List<FrequencyWordRelationship> getSources() {
+		return sources;
 	}
 
-	public void addVocabularyRelationship(VocabularyRelationship vocabularyRelationship) {
-		this.getContains().add(vocabularyRelationship);
+	public void setSources(List<FrequencyWordRelationship> sources) {
+		this.sources = sources;
 	}
 }

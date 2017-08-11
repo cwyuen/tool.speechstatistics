@@ -1,19 +1,20 @@
 package com.primecredit.tool.speechstatistics.services;
 
 import java.util.Date;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.primecredit.tool.common.util.ChineseUtils;
-import com.primecredit.tool.common.wsobject.request.SpeechStatisticsRequest;
-import com.primecredit.tool.speechstatistics.domain.Sentence;
+import com.primecredit.tool.speechstatistics.domain.FrequencyWord;
+import com.primecredit.tool.speechstatistics.domain.FrequencyWordRelationship;
+import com.primecredit.tool.speechstatistics.domain.NaturalLangRelationship;
+import com.primecredit.tool.speechstatistics.domain.NaturalLangWord;
 import com.primecredit.tool.speechstatistics.domain.StatisticsFile;
-import com.primecredit.tool.speechstatistics.domain.Vocabulary;
-import com.primecredit.tool.speechstatistics.domain.VocabularyRelationship;
-import com.primecredit.tool.speechstatistics.repositories.SentenceDao;
+import com.primecredit.tool.speechstatistics.repositories.FrequencyWordDao;
+import com.primecredit.tool.speechstatistics.repositories.NaturalLangWordDao;
 import com.primecredit.tool.speechstatistics.repositories.StatisticsFileDao;
-import com.primecredit.tool.speechstatistics.repositories.VocabularyDao;
 
 @Service
 public class SpeechStatisticsService {
@@ -22,42 +23,89 @@ public class SpeechStatisticsService {
 	private StatisticsFileDao statisticsFileDao;
 
 	@Autowired
-	private VocabularyDao vocabularyDao;
+	private FrequencyWordDao frequencyWordDao;
 	
 	@Autowired
-	private SentenceDao sentenceDao;
+	private NaturalLangWordDao naturalLangDao;
+	
+	public boolean saveNaturalLang(String word, String type, String textFileName, int line) {
+		boolean result = true;
+		
+		NaturalLangWord nlWord = naturalLangDao.findByName(word);
+		if(nlWord == null) {
+			nlWord = new NaturalLangWord();
+			nlWord.setName(word);
+			nlWord.setType(type);
+			nlWord.setCount(0);
+			naturalLangDao.save(nlWord);
+		}
+		
+		StatisticsFile statFile = statisticsFileDao.findByKey(textFileName);
+		if(statFile == null) {
+			statFile = new StatisticsFile();
+			statFile.setKey(textFileName);
+			statFile.setDate(new Date());
+			statisticsFileDao.save(statFile);
+		}
+		
+		nlWord.setCount(nlWord.getCount()+1);
+		
+		
+		//Handle new Relationship
+		if(!isExistNaturalLangRelationship(nlWord, statFile, line)) {
+			NaturalLangRelationship nlr = new NaturalLangRelationship(nlWord, statFile,line);
+			nlWord.addNaturalLangRelationship(nlr);
+		}
+		
+		naturalLangDao.save(nlWord);
+		
+		return result;
+	}
+	
+	private boolean isExistNaturalLangRelationship(NaturalLangWord nlWord, StatisticsFile statFile, int line) {
+		boolean result = false;
+		
+		List<NaturalLangRelationship> sources = nlWord.getSources();
+		if(sources != null) {
+			for(NaturalLangRelationship re : sources) {
+				if(re.getStatisticsFile().getId() == statFile.getId()) {
+					if(re.getLine() == line) {
+						return true;
+					}
+				}
+			}
+		}
+		
+		
+		return result;
+	}
+	
 
-	public boolean statistics(SpeechStatisticsRequest request) {
+	public boolean statisticsFrequencyWord(String sourceFileName, List<String> speechTexts) {
 
-		StringBuilder sbFileKey = new StringBuilder();
-		sbFileKey.append(request.getClientMachineId());
-		sbFileKey.append("_");
-		sbFileKey.append(request.getSourceFileName());
-
-		StatisticsFile sf = statisticsFileDao.findByKey(sbFileKey.toString());
+	
+		StatisticsFile sf = statisticsFileDao.findByKey(sourceFileName);
 		if (sf == null) {
 
 			// Insert new statistics record
 			sf = new StatisticsFile();
-			sf.setKey(sbFileKey.toString());
+			sf.setKey(sourceFileName);
 			sf.setDate(new Date());
 			statisticsFileDao.save(sf);
 
-			for (String str : request.getSpeechTexts()) {
-				Sentence sentence = new Sentence();
-				sentence.setValue(str);
-				sentence = sentenceDao.save(sentence);
-				
-				statisticsLine(sentence, str);
+			int line = 0;
+			for (String lineStr : speechTexts) {
+				line++;
+				statisticsFrequencyWordLine(sourceFileName, line, lineStr);
 			}
 		}
 
 		return true;
 	}
 
-	private void statisticsLine(Sentence sentence,  String line) {
+	private void statisticsFrequencyWordLine(String sourceFileName,int lineNum, String lineStr) {
 
-		String chineseLine = ChineseUtils.removeNonChinese(line);
+		String chineseLine = ChineseUtils.removeNonChinese(lineStr);
 
 		String[] list = chineseLine.split("");
 
@@ -78,7 +126,7 @@ public class SpeechStatisticsService {
 						sb.append(word1);
 						sb.append(word2);
 						sb.append(word3);
-						updateWordStatistics(sentence,sb.toString());
+						this.saveFrequencyWord(sb.toString(), sourceFileName, lineNum);
 					}
 				}
 
@@ -94,7 +142,7 @@ public class SpeechStatisticsService {
 						sb.append(word2);
 						sb.append(word3);
 						sb.append(word4);
-						updateWordStatistics(sentence,sb.toString());
+						this.saveFrequencyWord(sb.toString(), sourceFileName, lineNum);
 					}
 				}
 
@@ -113,7 +161,7 @@ public class SpeechStatisticsService {
 						sb.append(word3);
 						sb.append(word4);
 						sb.append(word5);
-						updateWordStatistics(sentence,sb.toString());
+						this.saveFrequencyWord(sb.toString(), sourceFileName, lineNum);
 					}
 				}
 
@@ -134,7 +182,7 @@ public class SpeechStatisticsService {
 						sb.append(word4);
 						sb.append(word5);
 						sb.append(word6);
-						updateWordStatistics(sentence,sb.toString());
+						this.saveFrequencyWord(sb.toString(), sourceFileName, lineNum);
 					}
 				}
 
@@ -143,29 +191,49 @@ public class SpeechStatisticsService {
 		}
 	}
 
-	private void updateWordStatistics(Sentence sentence, String word) {
-		Vocabulary vocabulary = vocabularyDao.findByName(word);
-		if (vocabulary == null) {
-			vocabulary = new Vocabulary();
-			vocabulary.setName(word);
-			vocabulary.setCount(1);
-			vocabulary = vocabularyDao.save(vocabulary);
-			
-			VocabularyRelationship vocabularyRelationship = new VocabularyRelationship();
-			vocabularyRelationship.setVocabularyNode(vocabulary);
-			vocabularyRelationship.setSentenceNode(sentence);
-			vocabulary.addVocabularyRelationship(vocabularyRelationship);
-			
-			vocabulary = vocabularyDao.save(vocabulary);
-			
-		} else {
-			vocabulary.setCount(vocabulary.getCount() + 1);
-			VocabularyRelationship vocabularyRelationship = new VocabularyRelationship();
-			vocabularyRelationship.setVocabularyNode(vocabulary);
-			vocabularyRelationship.setSentenceNode(sentence);
-			vocabulary = vocabularyDao.save(vocabulary);
+	private void saveFrequencyWord(String word, String sourceFileName, int line) {
+		FrequencyWord fqWord = frequencyWordDao.findByName(word);
+		if (fqWord == null) {
+			fqWord = new FrequencyWord();
+			fqWord.setName(word);
+			fqWord.setCount(0);
+			fqWord = frequencyWordDao.save(fqWord);
 		}
-
 		
+		StatisticsFile statFile = statisticsFileDao.findByKey(sourceFileName);
+		if(statFile == null) {
+			statFile = new StatisticsFile();
+			statFile.setKey(sourceFileName);
+			statFile.setDate(new Date());
+			statisticsFileDao.save(statFile);
+		}
+			
+		fqWord.setCount(fqWord.getCount()+1);
+		if(!isExistFrequencyWordRelationship(fqWord, statFile, line)) {
+			FrequencyWordRelationship fqr = new FrequencyWordRelationship(fqWord, statFile,line);
+			fqWord.addFrequencyWordRelationship(fqr);
+			frequencyWordDao.save(fqWord);
+		}
+		
+		frequencyWordDao.save(fqWord);
+	
+	}
+
+	private boolean isExistFrequencyWordRelationship(FrequencyWord fqWord, StatisticsFile statFile, int line) {
+		boolean result = false;
+		
+		List<FrequencyWordRelationship> sources = fqWord.getSources();
+		if(sources != null) {
+			for(FrequencyWordRelationship re : sources) {
+				if(re.getStatisticsFile().getId() == statFile.getId()) {
+					if(re.getLine() == line) {
+						return true;
+					}
+				}
+			}
+		}
+		
+		
+		return result;
 	}
 }

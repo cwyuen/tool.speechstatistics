@@ -5,7 +5,7 @@ import java.util.Date;
 import org.neo4j.ogm.annotation.GraphId;
 import org.neo4j.ogm.annotation.NodeEntity;
 
-@NodeEntity
+@NodeEntity(label = "statistics_file")
 public class StatisticsFile {
 	@GraphId
 	private Long id;

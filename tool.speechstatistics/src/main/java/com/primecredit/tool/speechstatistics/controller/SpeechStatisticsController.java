@@ -21,6 +21,24 @@ public class SpeechStatisticsController {
 
 	@Autowired
 	private SpeechStatisticsService speechStatisticsService;
+	
+	
+	@RequestMapping(value = "/nlStatistics", method = RequestMethod.POST)
+	public SpeechStatisticsResponse statistics(@RequestBody SpeechStatisticsRequest request) {
+
+		logger.info("statistics source:" + request.getSourceFileName());
+		
+		
+		//boolean success = speechStatisticsService.statisticsFrequencyWord(request);
+
+		SpeechStatisticsResponse response = new SpeechStatisticsResponse();
+		response.setClientMachineId(request.getClientMachineId());
+		response.setMillisecond(new Date().getTime());
+		//response.setSuccess(success);
+		
+		return response;
+
+	}
 
 	@RequestMapping(value = "/statistics", method = RequestMethod.POST)
 	public SpeechStatisticsResponse statistics(@RequestBody SpeechStatisticsRequest request) {
@@ -28,12 +46,12 @@ public class SpeechStatisticsController {
 		logger.info("statistics source:" + request.getSourceFileName());
 		
 		
-		boolean success = speechStatisticsService.statistics(request);
+		//boolean success = speechStatisticsService.statisticsFrequencyWord(request);
 
 		SpeechStatisticsResponse response = new SpeechStatisticsResponse();
 		response.setClientMachineId(request.getClientMachineId());
 		response.setMillisecond(new Date().getTime());
-		response.setSuccess(success);
+		//response.setSuccess(success);
 		
 		return response;
 
