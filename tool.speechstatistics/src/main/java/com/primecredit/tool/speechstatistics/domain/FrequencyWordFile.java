@@ -1,62 +1,43 @@
 package com.primecredit.tool.speechstatistics.domain;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.neo4j.ogm.annotation.GraphId;
 import org.neo4j.ogm.annotation.NodeEntity;
 import org.neo4j.ogm.annotation.Relationship;
 
-@NodeEntity(label = "FQ_WORD")
-public class FrequencyWord {
-
+@NodeEntity(label = "FQ_FILE")
+public class FrequencyWordFile {
 	@GraphId
 	private Long id;
-	private String name;
-	private String type;
-	private int count = 0;
-
+	private String key;
+	private Date date;
+	
 	@Relationship(type = "FQ_SOURCE")
 	private List<FrequencyWordSource> frequencyWordSources = new ArrayList<>();
 	
-	public FrequencyWord() {
-	}
-
-	public FrequencyWord(String name, String type) {
-		this.name = name;
-		this.type = type;
-	}
-
+	
+	public FrequencyWordFile() {}
+	
 	public Long getId() {
 		return id;
 	}
-
 	public void setId(Long id) {
 		this.id = id;
 	}
-
-	public String getName() {
-		return name;
+	public String getKey() {
+		return key;
 	}
-
-	public void setName(String name) {
-		this.name = name;
+	public void setKey(String key) {
+		this.key = key;
 	}
-
-	public String getType() {
-		return type;
+	public Date getDate() {
+		return date;
 	}
-
-	public void setType(String type) {
-		this.type = type;
-	}
-
-	public int getCount() {
-		return count;
-	}
-
-	public void setCount(int count) {
-		this.count = count;
+	public void setDate(Date date) {
+		this.date = date;
 	}
 
 	public List<FrequencyWordSource> getFrequencyWordSources() {
@@ -66,8 +47,6 @@ public class FrequencyWord {
 	public void setFrequencyWordSources(List<FrequencyWordSource> frequencyWordSources) {
 		this.frequencyWordSources = frequencyWordSources;
 	}
-
 	
 
-	
 }

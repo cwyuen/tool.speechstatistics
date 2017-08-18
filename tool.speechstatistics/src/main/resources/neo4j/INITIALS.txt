@@ -1,0 +1,28 @@
+create (b:INITIALS{name:"b",x:1,y:1})
+create (p:INITIALS{name:"p",x:1,y:2})
+create (m:INITIALS{name:"m",x:1,y:5})
+create (w:INITIALS{name:"w",x:1,y:8})
+create (f:INITIALS{name:"f",x:2,y:7})
+create (d:INITIALS{name:"d",x:3,y:1})
+create (t:INITIALS{name:"t",x:3,y:2})
+create (n:INITIALS{name:"n",x:3,y:5})
+create (l:INITIALS{name:"l",x:3,y:6})
+create (z:INITIALS{name:"z",x:4,y:3})
+create (c:INITIALS{name:"c",x:4,y:4})
+create (s:INITIALS{name:"s",x:4,y:7})
+create (j:INITIALS{name:"j",x:5,y:8})
+create (g:INITIALS{name:"g",x:6,y:1})
+create (k:INITIALS{name:"k",x:6,y:2})
+create (ng:INITIALS{name:"ng",x:6,y:5})
+create (gw:INITIALS{name:"gw",x:7,y:1})
+create (kw:INITIALS{name:"kw",x:7,y:2})
+create (h:INITIALS{name:"h",x:8,y:7})
+
+
+Match (n0:INITIALS) with[(n0)] as ns
+Unwind ns as n
+Match(n1:INITIALS {name:n.name}) with n1
+Match(n2:INITIALS)
+where n2.x = n1.x
+and n2.y >= n1.y-1 and n2.y <= n1.y+1
+create (n1)-[:NEAR]->(n2)
