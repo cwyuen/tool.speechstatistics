@@ -1,97 +1,115 @@
 package com.primecredit.tool.speechstatistics.services;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.primecredit.tool.common.util.ChineseUtils;
 import com.primecredit.tool.speechstatistics.domain.FrequencyWord;
-import com.primecredit.tool.speechstatistics.domain.FrequencyWordRelationship;
-import com.primecredit.tool.speechstatistics.domain.NaturalLangRelationship;
+import com.primecredit.tool.speechstatistics.domain.FrequencyWordFile;
+import com.primecredit.tool.speechstatistics.domain.FrequencyWordSource;
+import com.primecredit.tool.speechstatistics.domain.NaturalLangFile;
+import com.primecredit.tool.speechstatistics.domain.NaturalLangSource;
 import com.primecredit.tool.speechstatistics.domain.NaturalLangWord;
-import com.primecredit.tool.speechstatistics.domain.StatisticsFile;
+import com.primecredit.tool.speechstatistics.repositories.FrequencyFileDao;
 import com.primecredit.tool.speechstatistics.repositories.FrequencyWordDao;
+import com.primecredit.tool.speechstatistics.repositories.FrequencyWordSourceDao;
+import com.primecredit.tool.speechstatistics.repositories.NaturalLangFileDao;
+import com.primecredit.tool.speechstatistics.repositories.NaturalLangSourceDao;
 import com.primecredit.tool.speechstatistics.repositories.NaturalLangWordDao;
-import com.primecredit.tool.speechstatistics.repositories.StatisticsFileDao;
 
 @Service
 public class SpeechStatisticsService {
 
 	@Autowired
-	private StatisticsFileDao statisticsFileDao;
+	private FrequencyFileDao frequencyFileDao;
 
 	@Autowired
 	private FrequencyWordDao frequencyWordDao;
 	
 	@Autowired
-	private NaturalLangWordDao naturalLangDao;
+	private FrequencyWordSourceDao frequencyWordSourceDao;
 	
+	@Autowired
+	private NaturalLangFileDao naturalLangFileDao;
+	
+	@Autowired
+	private NaturalLangWordDao naturalLangWordDao;
+	
+	@Autowired
+	private NaturalLangSourceDao naturalLangSourceDao;
+	
+	
+	
+	@Transactional
 	public boolean saveNaturalLang(String word, String type, String textFileName, int line) {
 		boolean result = true;
 		
-		NaturalLangWord nlWord = naturalLangDao.findByName(word);
+		NaturalLangWord nlWord = naturalLangWordDao.findByName(word);
 		if(nlWord == null) {
 			nlWord = new NaturalLangWord();
 			nlWord.setName(word);
 			nlWord.setType(type);
 			nlWord.setCount(0);
-			naturalLangDao.save(nlWord);
+			naturalLangWordDao.save(nlWord);
 		}
 		
-		StatisticsFile statFile = statisticsFileDao.findByKey(textFileName);
+		NaturalLangFile statFile = naturalLangFileDao.findByKey(textFileName);
 		if(statFile == null) {
-			statFile = new StatisticsFile();
+			statFile = new NaturalLangFile();
 			statFile.setKey(textFileName);
 			statFile.setDate(new Date());
-			statisticsFileDao.save(statFile);
+			naturalLangFileDao.save(statFile);
 		}
+		
+		NaturalLangSource existSource= null;
+		Iterable<NaturalLangSource> sources = naturalLangSourceDao.findNaturalLangSources(nlWord.getId(), statFile.getId());
+		Iterator<NaturalLangSource> iter = sources.iterator();
+		if(iter.hasNext()) {
+			existSource = iter.next();
+		}
+		
+		if(existSource == null) {
+			existSource = new NaturalLangSource();
+			existSource.setNaturalLangWord(nlWord);
+			existSource.setNaturalLangFile(statFile);
+			List<Integer> lines = new ArrayList<>();
+			lines.add(line);
+			existSource.setLines(lines);
+		}else {
+			List<Integer> lines = existSource.getLines();
+			if(!lines.contains(line)) {
+				lines.add(line);
+			}
+		}
+		naturalLangSourceDao.save(existSource);
+		
 		
 		nlWord.setCount(nlWord.getCount()+1);
-		
-		
-		//Handle new Relationship
-		if(!isExistNaturalLangRelationship(nlWord, statFile, line)) {
-			NaturalLangRelationship nlr = new NaturalLangRelationship(nlWord, statFile,line);
-			nlWord.addNaturalLangRelationship(nlr);
-		}
-		
-		naturalLangDao.save(nlWord);
+		naturalLangWordDao.save(nlWord);
 		
 		return result;
 	}
 	
-	private boolean isExistNaturalLangRelationship(NaturalLangWord nlWord, StatisticsFile statFile, int line) {
-		boolean result = false;
-		
-		List<NaturalLangRelationship> sources = nlWord.getSources();
-		if(sources != null) {
-			for(NaturalLangRelationship re : sources) {
-				if(re.getStatisticsFile().getId() == statFile.getId()) {
-					if(re.getLine() == line) {
-						return true;
-					}
-				}
-			}
-		}
-		
-		
-		return result;
-	}
+	
 	
 
 	public boolean statisticsFrequencyWord(String sourceFileName, List<String> speechTexts) {
 
 	
-		StatisticsFile sf = statisticsFileDao.findByKey(sourceFileName);
+		FrequencyWordFile sf = frequencyFileDao.findByKey(sourceFileName);
 		if (sf == null) {
 
 			// Insert new statistics record
-			sf = new StatisticsFile();
+			sf = new FrequencyWordFile();
 			sf.setKey(sourceFileName);
 			sf.setDate(new Date());
-			statisticsFileDao.save(sf);
+			frequencyFileDao.save(sf);
 
 			int line = 0;
 			for (String lineStr : speechTexts) {
@@ -200,40 +218,42 @@ public class SpeechStatisticsService {
 			fqWord = frequencyWordDao.save(fqWord);
 		}
 		
-		StatisticsFile statFile = statisticsFileDao.findByKey(sourceFileName);
+		FrequencyWordFile statFile = frequencyFileDao.findByKey(sourceFileName);
 		if(statFile == null) {
-			statFile = new StatisticsFile();
+			statFile = new FrequencyWordFile();
 			statFile.setKey(sourceFileName);
 			statFile.setDate(new Date());
-			statisticsFileDao.save(statFile);
-		}
-			
-		fqWord.setCount(fqWord.getCount()+1);
-		if(!isExistFrequencyWordRelationship(fqWord, statFile, line)) {
-			FrequencyWordRelationship fqr = new FrequencyWordRelationship(fqWord, statFile,line);
-			fqWord.addFrequencyWordRelationship(fqr);
-			frequencyWordDao.save(fqWord);
+			frequencyFileDao.save(statFile);
 		}
 		
+		FrequencyWordSource existSource= null;
+		Iterable<FrequencyWordSource> sources = frequencyWordSourceDao.findFrequencyWordSources(fqWord.getId(), statFile.getId());
+		//Iterable<FrequencyWordSource> sources = frequencyWordSourceDao.findAll();
+		Iterator<FrequencyWordSource> iter = sources.iterator();
+		if(iter.hasNext()) {
+			existSource = iter.next();
+		}
+		
+		if(existSource == null) {
+			existSource = new FrequencyWordSource();
+			existSource.setFrequencyWord(fqWord);
+			existSource.setFrequencyWordFile(statFile);
+			List<Integer> lines = new ArrayList<>();
+			lines.add(line);
+			existSource.setLines(lines);
+		}else {
+			List<Integer> lines = existSource.getLines();
+			if(!lines.contains(line)) {
+				lines.add(line);
+			}
+		}
+		frequencyWordSourceDao.save(existSource);
+			
+		fqWord.setCount(fqWord.getCount()+1);		
 		frequencyWordDao.save(fqWord);
 	
 	}
 
-	private boolean isExistFrequencyWordRelationship(FrequencyWord fqWord, StatisticsFile statFile, int line) {
-		boolean result = false;
-		
-		List<FrequencyWordRelationship> sources = fqWord.getSources();
-		if(sources != null) {
-			for(FrequencyWordRelationship re : sources) {
-				if(re.getStatisticsFile().getId() == statFile.getId()) {
-					if(re.getLine() == line) {
-						return true;
-					}
-				}
-			}
-		}
-		
-		
-		return result;
-	}
+	
+	
 }

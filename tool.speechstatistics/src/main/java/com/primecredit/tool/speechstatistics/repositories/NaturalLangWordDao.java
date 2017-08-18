@@ -7,6 +7,7 @@ import com.primecredit.tool.speechstatistics.domain.NaturalLangWord;
 
 public interface NaturalLangWordDao extends GraphRepository<NaturalLangWord>{
 
-	
+
 	public NaturalLangWord findByName(@Param("name") String name);
+
 }

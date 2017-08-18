@@ -7,15 +7,25 @@ import org.neo4j.ogm.annotation.GraphId;
 import org.neo4j.ogm.annotation.NodeEntity;
 import org.neo4j.ogm.annotation.Relationship;
 
-@NodeEntity(label = "fq_word")
+@NodeEntity(label = "FQ_WORD")
 public class FrequencyWord {
+
 	@GraphId
 	private Long id;
 	private String name;
+	private String type;
 	private int count = 0;
 
-	@Relationship(type = "source", direction = Relationship.DIRECTION)
-	private List<FrequencyWordRelationship> sources = new ArrayList<FrequencyWordRelationship>();
+	@Relationship(type = "FQ_SOURCE")
+	private List<NaturalLangSource> naturalLangSources = new ArrayList<>();
+	
+	public FrequencyWord() {
+	}
+
+	public FrequencyWord(String name, String type) {
+		this.name = name;
+		this.type = type;
+	}
 
 	public Long getId() {
 		return id;
@@ -33,6 +43,14 @@ public class FrequencyWord {
 		this.name = name;
 	}
 
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
 	public int getCount() {
 		return count;
 	}
@@ -41,16 +59,13 @@ public class FrequencyWord {
 		this.count = count;
 	}
 
+	public List<NaturalLangSource> getNaturalLangSources() {
+		return naturalLangSources;
+	}
+
+	public void setNaturalLangSources(List<NaturalLangSource> naturalLangSources) {
+		this.naturalLangSources = naturalLangSources;
+	}
+
 	
-	public void addFrequencyWordRelationship(FrequencyWordRelationship vocabularyRelationship) {
-		this.getSources().add(vocabularyRelationship);
-	}
-
-	public List<FrequencyWordRelationship> getSources() {
-		return sources;
-	}
-
-	public void setSources(List<FrequencyWordRelationship> sources) {
-		this.sources = sources;
-	}
 }

@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.primecredit.tool.common.wsobject.request.SpeechStatisticsRequest;
-import com.primecredit.tool.common.wsobject.response.SpeechStatisticsResponse;
+import com.primecredit.tool.common.wsobject.request.NaturalLangRequest;
+import com.primecredit.tool.common.wsobject.response.NaturalLangResponse;
 import com.primecredit.tool.speechstatistics.services.SpeechStatisticsService;
 
 @RestController
@@ -24,37 +24,22 @@ public class SpeechStatisticsController {
 	
 	
 	@RequestMapping(value = "/nlStatistics", method = RequestMethod.POST)
-	public SpeechStatisticsResponse statistics(@RequestBody SpeechStatisticsRequest request) {
+	public NaturalLangResponse statistics(@RequestBody NaturalLangRequest request) {
 
-		logger.info("statistics source:" + request.getSourceFileName());
+		logger.info("statistics source:" + request.getClientMachineId());
+		logger.info("statistics source:" + request.getEntry().getName());
 		
-		
+		boolean success =speechStatisticsService.saveNaturalLang(request.getEntry().getName(), request.getEntry().getType(), request.getSourceFile(), request.getLine());
 		//boolean success = speechStatisticsService.statisticsFrequencyWord(request);
 
-		SpeechStatisticsResponse response = new SpeechStatisticsResponse();
+		NaturalLangResponse response = new NaturalLangResponse();
 		response.setClientMachineId(request.getClientMachineId());
 		response.setMillisecond(new Date().getTime());
-		//response.setSuccess(success);
+		response.setSuccess(success);
 		
 		return response;
 
 	}
 
-	@RequestMapping(value = "/statistics", method = RequestMethod.POST)
-	public SpeechStatisticsResponse statistics(@RequestBody SpeechStatisticsRequest request) {
-
-		logger.info("statistics source:" + request.getSourceFileName());
-		
-		
-		//boolean success = speechStatisticsService.statisticsFrequencyWord(request);
-
-		SpeechStatisticsResponse response = new SpeechStatisticsResponse();
-		response.setClientMachineId(request.getClientMachineId());
-		response.setMillisecond(new Date().getTime());
-		//response.setSuccess(success);
-		
-		return response;
-
-	}
-
+	
 }
