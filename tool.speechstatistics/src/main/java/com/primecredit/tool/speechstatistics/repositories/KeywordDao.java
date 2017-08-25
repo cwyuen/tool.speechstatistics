@@ -17,4 +17,9 @@ public interface KeywordDao extends GraphRepository<Keyword>{
 			+ "match (k:KEYWORD) where k.initials = i.name and k.vowel = v.name "
 			+ "return k")
 	public List<Keyword> findByPinYin(String initials, String vowel);
+	
+	
 }
+
+
+

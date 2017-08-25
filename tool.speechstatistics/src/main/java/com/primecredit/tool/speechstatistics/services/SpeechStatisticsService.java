@@ -3,10 +3,12 @@ package com.primecredit.tool.speechstatistics.services;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -308,18 +310,121 @@ public class SpeechStatisticsService {
 		}
 
 	}
-	
+
 	@Transactional
-	public void matchingKeyword(String input) {
-		
+	public Map<String,Double> matchingKeyword(String input) {
+		Map<String, Double> resultMap = new LinkedHashMap<>();
+
+		int length = input.length();
+
 		Map<String, PinYin> pyMap = new HashMap<>();
-		
-		
+
 		String[] verbs = input.split("");
-		for(String verb : verbs) {
+
+		// 1) Get PinYin
+		for (String verb : verbs) {
 			PinYin py = pinYinService.cantonesePinYin(verb);
 			pyMap.put(verb, py);
 		}
+
+		for (int i = 0; i < verbs.length; i++) {
+
+			String verb = verbs[i];
+			
+			if(verb == null || verb.equals("")) {
+				continue;
+			}
+
+			PinYin pinYin = pyMap.get(verb);
+			List<Keyword> keyList = keywordDao.findByPinYin(pinYin.getInitials(), pinYin.getVowel());
+
+			for (Keyword keyword : keyList) {
+				Keyword kwCurr = keywordDao.findOne(keyword.getId());
+
+				List<KeywordVerb> keywordVerbs = keywordVerbDao.findByStartNode(kwCurr.getId());
+
+				for (KeywordVerb kv : keywordVerbs) {
+
+					double fullMark = 100 * kv.getPath().length();
+					double currMark = 0;
+					
+					String[] paths = kv.getPath().split("");
+					
+					int pos = i;
+					for(int j=0; j<paths.length; j++){
+						
+						boolean match = false;
+						
+						for(int k=0; k<3; k++) {
+							if(pos + k >= length) {
+								break;
+							}
+							
+							String next = verbs[pos+k];
+							//100% Match
+							if(next.equalsIgnoreCase(paths[j])) {
+								currMark += 100 - ((k)*8);
+								match = true;
+								pos++;
+								break;
+							}
+							
+							//Check PinYin
+							PinYin nextPinYin = pyMap.get(next);
+							// Check if match Pin Yin
+							List<Keyword> nextList = keywordDao.findByPinYin(nextPinYin.getInitials(), nextPinYin.getVowel());
+							for (Keyword tmpNext : nextList) {
+								if (tmpNext.getName().equals(paths[j])) {
+												
+									currMark += 100 - ((k+1)*20);
+									
+									//if match initials +10
+									if(tmpNext.getInitials().equals(nextPinYin.getInitials())) {
+										currMark += 10;
+									}
+									
+									//if match vowel +10
+									if(tmpNext.getVowel().equals(nextPinYin.getVowel())) {
+										currMark += 10;
+									}
+									
+									
+									match = true;
+									pos++;
+									break;
+								}
+							}
+							
+							if(match) {
+								break;
+							}
+						}
+						
+						
+						if(!match) {
+							break;
+						}
+					
+					}
+					
+				
+					double result = currMark / fullMark;
+					if(resultMap.containsKey(kv.getPath())) {
+						double curr = resultMap.get(kv.getPath());
+						if(result > curr) {
+							resultMap.put(kv.getPath(), result);
+						}
+					}else {
+						if(result > 0.5) {
+							resultMap.put(kv.getPath(), result);
+						}
+					}
+					
+
+				}
+			}
+		}
+		return resultMap;
 	}
 
 }
